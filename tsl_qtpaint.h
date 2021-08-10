@@ -2,10 +2,11 @@
 #define TSL_QTPAINT_H
 
 #include <QMainWindow>
+#include <QMenu>
+#include "toolbar.h"
+#include "canvas.h"
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class TSL_QTPaint; }
-QT_END_NAMESPACE
+#include <QDebug>
 
 class TSL_QTPaint : public QMainWindow
 {
@@ -15,7 +16,26 @@ public:
     TSL_QTPaint(QWidget *parent = nullptr);
     ~TSL_QTPaint();
 
+    void closeEvent(QCloseEvent *event) override;
+
+public slots:
+    void s_showToolbar();
+    void s_saveImageAs();
+
 private:
-    Ui::TSL_QTPaint *ui;
+    void buildMenu();
+    void initAction();
+
+    QMenu *menu_File;
+    QMenu *menu_Save;
+    //
+    QMenu *menu_View;
+    QMenu *menu_ShowToolbar;
+
+    QAction *actToolbar;
+    QAction *actSaveAs;
+    Toolbar *myToolbar;
+    Canvas *myCanvas;
+
 };
 #endif // TSL_QTPAINT_H
