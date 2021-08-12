@@ -3,25 +3,35 @@
 #include <QColorDialog>
 #include <QPixmap>
 #include <QDebug>
+#include <QList>
 
 Canvas::Canvas(QWidget *parent) : QWidget(parent), brushPixmap(":/brush/Brush/ring.png")
 {
     setMouseTracking(true);
 
-    //setAttribute(Qt::WA_StaticContents);
     drowing = false;
     penWidth = 50;
     penColor = Qt::blue;
-    image = new QImage(QSize(defaultWidth,defaultHight),QImage::Format_ARGB32);
+    drowingBrush = new QBrush(brushPixmap);
+    drowingBrush->setStyle(Qt::SolidPattern);
+    drowingBrush->setColor(penColor);
+
+    image = new QImage(QSize(defaultWidth,defaultHight),QImage::Format_RGBA64);
     image->fill(qRgb(0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF));
     update();
+
     defBrus = QCursor(brushPixmap,-(penWidth/2), -(penWidth/2));
     this->setCursor(defBrus);
+
+    for (int i = 0;i<10 ;i++ ) {
+        undoStack.push_back(*image);
+    }
 }
 
 Canvas::~Canvas()
 {
     delete image;
+    delete drowingBrush;
 }
 
 void Canvas::s_setPenColor()
@@ -29,6 +39,7 @@ void Canvas::s_setPenColor()
     QColor collor = QColorDialog::getColor(Qt::blue,this,QString("Paleta farieb"));
     swapBrushColor(penColor,collor);
     penColor = collor;
+    drowingBrush->setColor(penColor);
 }
 
 void Canvas::s_clearImage()
@@ -41,19 +52,21 @@ void Canvas::s_changeRedColor()
 {
     swapBrushColor(penColor,Qt::red);
     penColor = Qt::red;
+    drowingBrush->setColor(penColor);
 }
 
 void Canvas::s_changeBlueColor()
 {
     swapBrushColor(penColor,Qt::blue);
     penColor = Qt::blue;
+    drowingBrush->setColor(penColor);
 }
 
 void Canvas::s_changeGreenColor()
 {
     swapBrushColor(penColor,Qt::green);
     penColor = Qt::green;
-
+    drowingBrush->setColor(penColor);
 }
 
 void Canvas::mousePressEvent(QMouseEvent *event)
@@ -67,8 +80,10 @@ void Canvas::mousePressEvent(QMouseEvent *event)
 
 void Canvas::mouseReleaseEvent(QMouseEvent *event)
 {
-    if(event->button() == Qt::LeftButton)
+    if(event->button() == Qt::LeftButton){
         drowing = false;
+        insertTo_undoStack();
+    }
 }
 
 void Canvas::mouseMoveEvent(QMouseEvent *event)
@@ -96,8 +111,10 @@ void Canvas::paintLine(const QPoint &pointEnd)
 {
     QPainter painter(image);
 
-    painter.setPen(QPen(penColor, penWidth, Qt::SolidLine, Qt::RoundCap,
-                        Qt::RoundJoin));
+    //painter.setPen(QPen(penColor, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
+    painter.setPen(QPen(*drowingBrush, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
+    painter.setBrush(*drowingBrush);
+
     painter.drawLine(pointLast, pointEnd);
 
     int rad = (penWidth / 2) + 2;
@@ -112,7 +129,12 @@ void Canvas::paintPoint(const QPoint &point)
 {
     QPainter painter(image);
 
-    painter.setPen(QPen(penColor, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
+    //painter.setPen(QPen(penColor, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
+    painter.setPen(QPen(*drowingBrush, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
+    painter.setBrush(*drowingBrush);
+
+    painter.setBrush(*drowingBrush);
+
     painter.drawPoint(point);
 
     update();
@@ -135,6 +157,65 @@ void Canvas::swapBrushColor(const QColor &from,QColor to)
 
     defBrus = QCursor(brushPixmap,-(penWidth/2), -(penWidth/2));
     this->setCursor(defBrus);
+}
+
+void Canvas::insertTo_undoStack()
+{
+    if(undoStack_insertPosition >= undoStackMax){
+        undoStack_insertPosition = 0;
+    }
+
+    qDebug() << QString("undoStack_insertPosition = ") <<QString::number(undoStack_insertPosition);
+    undoStack.replace(undoStack_insertPosition ,*image);
+    undoStack_readPosition = undoStack_insertPosition++;  //read is lover
+
+    if(stepBack < 9)
+        stepBack++;
+    stepForward = 0;
+}
+
+void Canvas::s_readFrom_undoStackBack()
+{
+    if(stepBack == 0)
+        return;
+    if(undoStack_readPosition == 0)
+        undoStack_readPosition = 10;
+
+    qDebug() << QString("BACK: undoStack_readPosition = ") <<QString::number(undoStack_readPosition) <<
+                QString("undoStack_insertPosition = ") << QString::number(undoStack_insertPosition);
+
+    --undoStack_readPosition;
+    *image = undoStack.at(undoStack_readPosition);
+    update();
+    stepBack--;
+    stepForward++;
+
+    if((undoStack_insertPosition-1) == -1)
+        undoStack_insertPosition = 9;
+    else
+        undoStack_insertPosition--;
+}
+
+void Canvas::s_readFrom_undoStackForwar()
+{
+    if(stepForward == 0)
+        return;
+    if(undoStack_readPosition == 9)
+        undoStack_readPosition = -1;
+
+    qDebug() << QString("FORWARD: undoStack_readPosition = ") <<QString::number(undoStack_readPosition) <<
+                QString("undoStack_insertPosition = ") << QString::number(undoStack_insertPosition);
+
+    ++undoStack_readPosition;
+    *image = undoStack.at(undoStack_readPosition);
+    update();
+    stepBack++;
+    stepForward--;
+
+    if((undoStack_insertPosition) == 10)
+        undoStack_insertPosition = 0;
+    else
+        undoStack_insertPosition++;
 }
 
 bool Canvas::saveImage(const QString &fileName, const char *format)

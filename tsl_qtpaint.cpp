@@ -83,12 +83,20 @@ void TSL_QTPaint::initAction()
     actSaveAs = new QAction(QString("Save as"),this);
     connect(actSaveAs,SIGNAL(triggered()),this,SLOT(s_saveImageAs()));
 
+    undoAction = new QAction(QString("undo"),this);
+    undoAction->setShortcuts(QKeySequence::Undo);
+    //connect(undoAction,SIGNAL(changed()),myCanvas,SLOT(s_readFrom_undoStack()));
+
+
     Toolbar* myToolbar = Toolbar::createToolbarInstance();
     connect(myToolbar->getColorRed(), SIGNAL(clicked()), myCanvas, SLOT(s_changeRedColor()));
     connect(myToolbar->getColorBlue(), SIGNAL(clicked()), myCanvas, SLOT(s_changeBlueColor()));
     connect(myToolbar->getColorGreen(), SIGNAL(clicked()), myCanvas, SLOT(s_changeGreenColor()));
-    connect(myToolbar->getColorAny(), SIGNAL(clicked()), myCanvas, SLOT(s_setPenColor()));
-    connect(myToolbar->getClearImage(), SIGNAL(clicked()), myCanvas, SLOT(s_clearImage()));
+    //connect(myToolbar->getColorAny(), SIGNAL(clicked()), myCanvas, SLOT(s_setPenColor()));
+    //connect(myToolbar->getClearImage(), SIGNAL(clicked()), myCanvas, SLOT(s_clearImage()));
+    connect(myToolbar->getClearImage(), SIGNAL(clicked()),myCanvas,SLOT(s_readFrom_undoStackBack()));
+    connect(myToolbar->getColorAny(), SIGNAL(clicked()), myCanvas, SLOT(s_readFrom_undoStackForwar()));
 }
+
 
 

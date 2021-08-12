@@ -34,6 +34,7 @@ private:
 
     QAction *actToolbar;
     QAction *actSaveAs;
+    QAction *undoAction;
     Toolbar *myToolbar;
     Canvas *myCanvas;
 
