@@ -4,8 +4,8 @@
 #include <QWidget>
 #include <QMouseEvent>
 
-#define defaultHight 800
-#define defaultWidth 1200
+#define DEFAULT_HIGHT 800
+#define DEFAULT_WIDTH 1200
 #define undoStackMax 10
 
 class Canvas : public QWidget
@@ -23,6 +23,7 @@ public slots:
     void s_changeGreenColor();
     void s_setPenColor(); //anyButton
     void s_clearImage();
+    void s_setNewBrush();
     void s_readFrom_undoStackBack();
     void s_readFrom_undoStackForwar();
 
@@ -39,7 +40,7 @@ private:
     QColor penColor;
 
     QPoint pointLast;
-    QCursor defBrus;
+    QCursor cursorBrus;
     QBrush *drowingBrush;
     QPixmap brushPixmap;
     QByteArray tempByteArray;
@@ -47,12 +48,6 @@ private:
     //new undoStack
     QList<QByteArray> uStack;
     int uStackPosition = -1;
-    //old unduStack
-    /*QList<QImage> undoStack;
-    int undoStack_insertPosition = 1;
-    int undoStack_readPosition = 1;
-    int stepBack = 0;
-    int stepForward = 0;*/
 
     void paintLine(const QPoint &pointEnd);
     void paintPoint(const QPoint &point);

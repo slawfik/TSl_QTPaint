@@ -13,7 +13,7 @@ TSL_QTPaint::TSL_QTPaint(QWidget *parent)
     initAction();
     buildMenu();
 
-    setFixedSize(defaultWidth,defaultHight);
+    setFixedSize(DEFAULT_WIDTH,DEFAULT_HIGHT);
 }
 
 TSL_QTPaint::~TSL_QTPaint()
@@ -70,13 +70,10 @@ void TSL_QTPaint::buildMenu()
 
     menu_File = new QMenu(QString("File"),this);
     menu_File->addAction(actSaveAs);
-
-    menu_setBrushPixmap = new QMenu(QString("Nový štetc"),this);
-    menu_setBrushPixmap->addAction(actBrushPixmap);
+    menu_File->addAction(actBrushPixmap);
 
     menuBar()->addMenu(menu_File);
     menuBar()->addMenu(menu_View);
-    menu_File->addMenu(menu_setBrushPixmap);
 }
 
 void TSL_QTPaint::initAction()
@@ -88,6 +85,7 @@ void TSL_QTPaint::initAction()
     connect(actSaveAs,SIGNAL(triggered()),this,SLOT(s_saveImageAs()));
 
     actBrushPixmap = new QAction(QString("Nový štetc"),this);
+    connect(actBrushPixmap,SIGNAL(triggered()),myCanvas,SLOT(s_setNewBrush()));
 
     undoAction = new QAction(QString("undo"),this);
     undoAction->setShortcuts(QKeySequence::Undo);
