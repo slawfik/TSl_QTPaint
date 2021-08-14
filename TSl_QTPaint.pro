@@ -38,3 +38,10 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     brush.qrc
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../../../usr/local/lib/release/ -llzo2
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../../../usr/local/lib/debug/ -llzo2
+else:unix: LIBS += -L$$PWD/../../../../../../usr/local/lib/ -llzo2
+
+INCLUDEPATH += $$PWD/../../../../../../usr/local/include/lzo
+DEPENDPATH += $$PWD/../../../../../../usr/local/include/lzo

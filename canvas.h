@@ -42,12 +42,17 @@ private:
     QCursor defBrus;
     QBrush *drowingBrush;
     QPixmap brushPixmap;
+    QByteArray tempByteArray;
 
-    QList<QImage> undoStack;
+    //new undoStack
+    QList<QByteArray> uStack;
+    int uStackPosition = -1;
+    //old unduStack
+    /*QList<QImage> undoStack;
     int undoStack_insertPosition = 1;
     int undoStack_readPosition = 1;
     int stepBack = 0;
-    int stepForward = 0;
+    int stepForward = 0;*/
 
     void paintLine(const QPoint &pointEnd);
     void paintPoint(const QPoint &point);

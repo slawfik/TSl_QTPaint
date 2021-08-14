@@ -4,6 +4,9 @@
 #include <QPixmap>
 #include <QDebug>
 #include <QList>
+// compression library
+#include "lzo/lzoconf.h"
+#include <lzo/lzo1x.h>
 
 Canvas::Canvas(QWidget *parent) : QWidget(parent), brushPixmap(":/brush/Brush/ring.png")
 {
@@ -23,8 +26,16 @@ Canvas::Canvas(QWidget *parent) : QWidget(parent), brushPixmap(":/brush/Brush/ri
     defBrus = QCursor(brushPixmap,-(penWidth/2), -(penWidth/2));
     this->setCursor(defBrus);
 
-    for (int i = 0;i<10 ;i++ ) {
+    /*for (int i = 0;i<10 ;i++ ) {
         undoStack.push_back(*image);
+    }*/
+    insertTo_undoStack(); //insert first image
+
+    //init LZO compression library
+    if (lzo_init() != LZO_E_OK)
+    {
+        printf("internal error - lzo_init() failed !!!\n");
+        printf("(this usually indicates a compiler bug - try recompiling\nwithout optimizations, and enable '-DLZO_DEBUG' for diagnostics)\n");
     }
 }
 
@@ -45,6 +56,7 @@ void Canvas::s_setPenColor()
 void Canvas::s_clearImage()
 {
     image->fill(qRgb(0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF));
+    insertTo_undoStack();
     update();
 }
 
@@ -161,7 +173,38 @@ void Canvas::swapBrushColor(const QColor &from,QColor to)
 
 void Canvas::insertTo_undoStack()
 {
-    if(undoStack_insertPosition >= undoStackMax){
+    //ssss
+    lzo_uint inLen = image->sizeInBytes();
+    lzo_uint outLen = inLen+inLen/16+64+3; //def from library
+    unsigned char tempOut[outLen];
+    lzo_voidp wrkmem = (lzo_voidp) malloc(LZO1X_1_MEM_COMPRESS);
+
+    QByteArray arr;
+    QDataStream ds(&arr, QIODevice::WriteOnly);
+
+    //COMPRESS
+    int r= lzo1x_1_compress(image->bits(),inLen,tempOut,&outLen,wrkmem);
+    if (r == LZO_E_OK)
+        qDebug() << QString("compressed %1 bytes into %2 bytes\n").arg(inLen).arg(outLen);
+    ds.writeRawData((const char*)tempOut, outLen);
+    uStack.push_back(arr);
+
+    //++++
+    /*QByteArray arr;
+    QDataStream ds(&arr, QIODevice::ReadWrite);
+    ds.writeRawData((const char*)image->bits(), image->byteCount());
+     ds.device()->seek(0);
+
+        *image = QImage(defaultWidth, defaultHight, image->format());
+        ds.readRawData((char*)image->bits(), image->byteCount()); // We read the data directly into the image buffer
+    //++++**/
+    update();
+
+    uStackPosition++;
+    free(wrkmem);
+    //ssss
+
+    /*if(undoStack_insertPosition >= undoStackMax){
         undoStack_insertPosition = 0;
     }
 
@@ -171,18 +214,46 @@ void Canvas::insertTo_undoStack()
 
     if(stepBack < 9)
         stepBack++;
-    stepForward = 0;
+    stepForward = 0;*/
 }
 
 void Canvas::s_readFrom_undoStackBack()
 {
-    if(stepBack == 0)
+    //ssss
+    if(uStackPosition == 0)
+        return;
+    lzo_uint new_len;
+    lzo_uint imageLen = image->sizeInBytes();
+    lzo_uint inLen = uStack.operator[](--uStackPosition).size();
+    unsigned char* tempIn = reinterpret_cast<unsigned char*> (uStack.operator[](uStackPosition).data());
+    lzo_bytep tempOut = (lzo_bytep) malloc(imageLen);
+
+    //DECOMPRESS
+    new_len = imageLen;
+    int r = lzo1x_decompress(tempIn, inLen, tempOut, &new_len, NULL);
+    if (r == LZO_E_OK && new_len == imageLen)
+        qDebug() << QString("decompressed %1 bytes back into %2 bytes\n").arg(inLen).arg(imageLen);
+    else
+    {
+        qDebug() << QString("decompress failed");
+    }
+
+    *image = QImage(defaultWidth, defaultHight, image->format());
+    memcpy((char*)image->bits(),tempOut,new_len);
+
+    update();
+    free(tempOut);
+    //ssss
+
+    /*if(stepBack == 0)
         return;
     if(undoStack_readPosition == 0)
         undoStack_readPosition = 10;
 
-    qDebug() << QString("BACK: undoStack_readPosition = ") <<QString::number(undoStack_readPosition) <<
-                QString("undoStack_insertPosition = ") << QString::number(undoStack_insertPosition);
+    #ifdef QT_DEBUG
+        qDebug() << QString("BACK: undoStack_readPosition = ") <<QString::number(undoStack_readPosition) <<
+                    QString("undoStack_insertPosition = ") << QString::number(undoStack_insertPosition);
+    #endif
 
     --undoStack_readPosition;
     *image = undoStack.at(undoStack_readPosition);
@@ -193,18 +264,20 @@ void Canvas::s_readFrom_undoStackBack()
     if((undoStack_insertPosition-1) == -1)
         undoStack_insertPosition = 9;
     else
-        undoStack_insertPosition--;
+        undoStack_insertPosition--;*/
 }
 
 void Canvas::s_readFrom_undoStackForwar()
 {
-    if(stepForward == 0)
+    /*if(stepForward == 0)
         return;
     if(undoStack_readPosition == 9)
         undoStack_readPosition = -1;
 
-    qDebug() << QString("FORWARD: undoStack_readPosition = ") <<QString::number(undoStack_readPosition) <<
-                QString("undoStack_insertPosition = ") << QString::number(undoStack_insertPosition);
+    #ifdef QT_DEBUG
+        qDebug() << QString("FORWARD: undoStack_readPosition = ") <<QString::number(undoStack_readPosition) <<
+                    QString("undoStack_insertPosition = ") << QString::number(undoStack_insertPosition);
+    #endif
 
     ++undoStack_readPosition;
     *image = undoStack.at(undoStack_readPosition);
@@ -215,7 +288,7 @@ void Canvas::s_readFrom_undoStackForwar()
     if((undoStack_insertPosition) == 10)
         undoStack_insertPosition = 0;
     else
-        undoStack_insertPosition++;
+        undoStack_insertPosition++;*/
 }
 
 bool Canvas::saveImage(const QString &fileName, const char *format)

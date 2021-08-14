@@ -1,5 +1,4 @@
 #include "tsl_qtpaint.h"
-
 #include <QApplication>
 
 int main(int argc, char *argv[])

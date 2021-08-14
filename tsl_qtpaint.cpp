@@ -71,8 +71,12 @@ void TSL_QTPaint::buildMenu()
     menu_File = new QMenu(QString("File"),this);
     menu_File->addAction(actSaveAs);
 
+    menu_setBrushPixmap = new QMenu(QString("Nový štetc"),this);
+    menu_setBrushPixmap->addAction(actBrushPixmap);
+
     menuBar()->addMenu(menu_File);
     menuBar()->addMenu(menu_View);
+    menu_File->addMenu(menu_setBrushPixmap);
 }
 
 void TSL_QTPaint::initAction()
@@ -83,19 +87,26 @@ void TSL_QTPaint::initAction()
     actSaveAs = new QAction(QString("Save as"),this);
     connect(actSaveAs,SIGNAL(triggered()),this,SLOT(s_saveImageAs()));
 
+    actBrushPixmap = new QAction(QString("Nový štetc"),this);
+
     undoAction = new QAction(QString("undo"),this);
     undoAction->setShortcuts(QKeySequence::Undo);
-    //connect(undoAction,SIGNAL(changed()),myCanvas,SLOT(s_readFrom_undoStack()));
+    connect(undoAction,SIGNAL(triggered()),myCanvas,SLOT(s_readFrom_undoStackBack()));
+    addAction(undoAction);
 
+    redoAction = new QAction(QString("redu"),this);
+    redoAction->setShortcuts(QKeySequence::Redo);
+    connect(redoAction,SIGNAL(triggered()),myCanvas,SLOT(s_readFrom_undoStackForwar()));
+    addAction(redoAction);
 
     Toolbar* myToolbar = Toolbar::createToolbarInstance();
     connect(myToolbar->getColorRed(), SIGNAL(clicked()), myCanvas, SLOT(s_changeRedColor()));
     connect(myToolbar->getColorBlue(), SIGNAL(clicked()), myCanvas, SLOT(s_changeBlueColor()));
     connect(myToolbar->getColorGreen(), SIGNAL(clicked()), myCanvas, SLOT(s_changeGreenColor()));
-    //connect(myToolbar->getColorAny(), SIGNAL(clicked()), myCanvas, SLOT(s_setPenColor()));
-    //connect(myToolbar->getClearImage(), SIGNAL(clicked()), myCanvas, SLOT(s_clearImage()));
-    connect(myToolbar->getClearImage(), SIGNAL(clicked()),myCanvas,SLOT(s_readFrom_undoStackBack()));
-    connect(myToolbar->getColorAny(), SIGNAL(clicked()), myCanvas, SLOT(s_readFrom_undoStackForwar()));
+    connect(myToolbar->getColorAny(), SIGNAL(clicked()), myCanvas, SLOT(s_setPenColor()));
+    connect(myToolbar->getClearImage(), SIGNAL(clicked()), myCanvas, SLOT(s_clearImage()));
+    //QTimer
+    //QDateTime
 }
 
 
