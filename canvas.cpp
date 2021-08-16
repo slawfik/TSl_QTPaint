@@ -12,8 +12,6 @@
 
 Canvas::Canvas(QWidget *parent) : QWidget(parent), brushPixmap(":/brush/Brush/ring.png")
 {
-    QDateTime as;
-
     setMouseTracking(true);
 
     drowing = false;
@@ -69,17 +67,12 @@ void Canvas::s_setNewBrush()
     if( !filename.isNull() ) {
         brushPixmap = QPixmap(filename);
         penColor = Qt::blue;
-        drowingBrush->setTexture(brushPixmap);
-        drowingBrush->setStyle(Qt::RadialGradientPattern);
+        drowingBrush->setStyle(Qt::SolidPattern);
         drowingBrush->setColor(penColor);
-
 
         cursorBrus = QCursor(brushPixmap,-(penWidth/2), -(penWidth/2));
         this->setCursor(cursorBrus);
     }
-    /*drowingBrush = new QBrush(brushPixmap);
-    drowingBrush->setStyle(Qt::SolidPattern);
-    drowingBrush->setColor(penColor);*/
 }
 
 void Canvas::s_changeRedColor()
@@ -130,7 +123,6 @@ void Canvas::mouseMoveEvent(QMouseEvent *event)
 void Canvas::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-
     QRect dirtyRect = event->rect();
 
     painter.drawImage(dirtyRect, *image, dirtyRect);
@@ -145,16 +137,31 @@ void Canvas::paintLine(const QPoint &pointEnd)
 {
     QPainter painter(image);
 
-    //painter.setPen(QPen(penColor, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
-    painter.setPen(QPen(*drowingBrush, penWidth,Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));//
-    painter.setBrush(*drowingBrush);
+    //painter.setBrush(*drowingBrush);
 
-    painter.drawLine(pointLast, pointEnd);
+    painter.setPen(QPen(*drowingBrush, penWidth,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+    painter.drawRect(50, 50, 150,150);
+
+    //painter.drawLine(pointLast, pointEnd);
+    /*pointLast.setX(pointLast.rx() - brushPixmap.width()/2);
+    pointLast.setY(pointLast.ry() - brushPixmap.height()/2);
+
+    int xStep = (pointLast.rx() - (pointEnd.x()- brushPixmap.width()/2))/15;
+    int yStep = (pointLast.ry() - (pointEnd.y()- brushPixmap.height()/2))/15;
+    for (int i=0;i<15;i++) {
+        pointLast.setX(pointLast.rx() + xStep);
+        pointLast.setY(pointLast.ry() + yStep);
+        painter.drawPixmap(pointLast,brushPixmap);
+    }
+
+    painter.drawPixmap(pointEnd,brushPixmap);
+    update();*/
+
+    painter.drawLine(pointLast,pointEnd);
 
     int rad = (penWidth / 2) + 2;
 
-    update(QRect(pointLast,pointEnd).normalized()
-                                     .adjusted(-rad, -rad, +rad, +rad));
+    update(QRect(pointLast,pointEnd).normalized().adjusted(-rad, -rad, +rad, +rad));
 
     pointLast = pointEnd;
 }
@@ -163,10 +170,15 @@ void Canvas::paintPoint(const QPoint &point)
 {
     QPainter painter(image);
 
-    //painter.setPen(QPen(penColor, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
-    painter.setPen(QPen(*drowingBrush, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
     painter.setBrush(*drowingBrush);
+    painter.setPen(QPen(penColor, penWidth, Qt::SolidLine, Qt::RoundCap,Qt::RoundJoin));
+    //painter.setPen(QPen(*drowingBrush, penWidth, Qt::SolidLine));
 
+    /*QPoint tempPoint = point;
+    tempPoint.setX(tempPoint.rx()- brushPixmap.width()/2);
+    tempPoint.setY(tempPoint.ry()- brushPixmap.height()/2);
+
+    painter.drawPixmap(tempPoint,brushPixmap);*/
     painter.drawPoint(point);
 
     update();
@@ -193,6 +205,11 @@ void Canvas::swapBrushColor(const QColor &from,QColor to)
 
 void Canvas::insertTo_undoStack()
 {
+#ifdef QT_DEBUG
+    clock_t start,end;
+    start = clock();
+#endif
+
     lzo_uint inLen = image->sizeInBytes();
     lzo_uint outLen = inLen+inLen/16+64+3; //def from library
     unsigned char tempOut[outLen];
@@ -200,12 +217,12 @@ void Canvas::insertTo_undoStack()
     QByteArray arr;
     QDataStream ds(&arr, QIODevice::WriteOnly);
 
-    if(!uStack.isEmpty()){
-        if(uStack.at(uStackPosition) != uStack.last()){
-            int countForDelete = uStack.size() - (uStackPosition+1);
-            qDebug() << QString("ustack.size %1 uStackPosition %2 \n").arg(uStack.size()).arg(uStackPosition+1);
+    if(!undoStack.isEmpty()){
+        if(undoStack.at(undoStackPosition) != undoStack.last()){
+            int countForDelete = undoStack.size() - (undoStackPosition+1);
+            qDebug() << QString("ustack.size %1 uStackPosition %2 \n").arg(undoStack.size()).arg(undoStackPosition+1);
             for (int i = 0;i<countForDelete;i++ ) {
-                uStack.removeLast();
+                undoStack.removeLast();
             }
         }
     }
@@ -217,20 +234,32 @@ void Canvas::insertTo_undoStack()
 
     //PUSH IMAGE TO STACK
     ds.writeRawData((const char*)tempOut, outLen);
-    uStack.push_back(arr);
+    undoStack.push_back(arr);
 
-    uStackPosition++;
+    undoStackPosition++;
     free(wrkmem);
+
+#ifdef QT_DEBUG
+    end = clock();
+    QString text;
+    text.sprintf("--TIMER-- insertTo_undoStack --> %0.6f sec", ((float) end-start)/CLOCKS_PER_SEC);
+    qDebug() << text;
+#endif
 }
 
 void Canvas::s_readFrom_undoStackBack()
 {
-    if(uStackPosition == 0)
+#ifdef QT_DEBUG
+    clock_t start,end;
+    start = clock();
+#endif
+
+    if(undoStackPosition == 0)
         return;
     lzo_uint new_len;
     lzo_uint imageLen = image->sizeInBytes();
-    lzo_uint inLen = uStack.operator[](--uStackPosition).size(); //DECREMENT uStackPosition
-    unsigned char* tempIn = reinterpret_cast<unsigned char*> (uStack.operator[](uStackPosition).data());
+    lzo_uint inLen = undoStack.operator[](--undoStackPosition).size(); //DECREMENT uStackPosition
+    unsigned char* tempIn = reinterpret_cast<unsigned char*> (undoStack.operator[](undoStackPosition).data());
     lzo_bytep tempOut = (lzo_bytep) malloc(imageLen);
 
     //DECOMPRESS
@@ -248,17 +277,29 @@ void Canvas::s_readFrom_undoStackBack()
 
     update();
     free(tempOut);
+
+#ifdef QT_DEBUG
+    end = clock();
+    QString text;
+    text.sprintf("--TIMER-- s_readFrom_undoStackBack --> %0.6f sec", ((float) end-start)/CLOCKS_PER_SEC);
+    qDebug() << text;
+#endif
 }
 
 void Canvas::s_readFrom_undoStackForwar()
 {
-    if(uStack.at(uStackPosition) == uStack.last())
+#ifdef QT_DEBUG
+    clock_t start,end;
+    start = clock();
+#endif
+
+    if(undoStack.at(undoStackPosition) == undoStack.last())
         return;
-    qDebug() << QString("Forward --> %1 _").arg(uStackPosition);
+    qDebug() << QString("Forward --> %1 _").arg(undoStackPosition);
     lzo_uint lenAfterDecompress;
     lzo_uint imageLen = image->sizeInBytes();
-    lzo_uint inputLen_Compress = uStack.operator[](++uStackPosition).size(); //INCREMENT uStackPosition
-    unsigned char* input_Compress = reinterpret_cast<unsigned char*> (uStack.operator[](uStackPosition).data());
+    lzo_uint inputLen_Compress = undoStack.operator[](++undoStackPosition).size(); //INCREMENT uStackPosition
+    unsigned char* input_Compress = reinterpret_cast<unsigned char*> (undoStack.operator[](undoStackPosition).data());
     lzo_bytep tempOut = (lzo_bytep) malloc(imageLen);
 
     //DECOMPRESS
@@ -276,6 +317,13 @@ void Canvas::s_readFrom_undoStackForwar()
 
     update();
     free(tempOut);
+
+#ifdef QT_DEBUG
+    end = clock();
+    QString text;
+    text.sprintf("--TIMER-- s_readFrom_undoStackForwar --> %0.6f sec", ((float) end-start)/CLOCKS_PER_SEC);
+    qDebug() << text;
+#endif
 }
 
 bool Canvas::saveImage(const QString &fileName, const char *format)

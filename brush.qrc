@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/brush">
         <file>Brush/ring.png</file>
+        <file>Brush/test2.png</file>
     </qresource>
 </RCC>

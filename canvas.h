@@ -46,8 +46,8 @@ private:
     QByteArray tempByteArray;
 
     //new undoStack
-    QList<QByteArray> uStack;
-    int uStackPosition = -1;
+    QList<QByteArray> undoStack;
+    int undoStackPosition = -1;
 
     void paintLine(const QPoint &pointEnd);
     void paintPoint(const QPoint &point);
