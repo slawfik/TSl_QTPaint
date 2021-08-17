@@ -2,5 +2,7 @@
     <qresource prefix="/brush">
         <file>Brush/ring.png</file>
         <file>Brush/test2.png</file>
+        <file>Brush/redo.png</file>
+        <file>Brush/undo.png</file>
     </qresource>
 </RCC>

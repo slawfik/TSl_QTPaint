@@ -17,7 +17,8 @@ public:
     ~TSL_QTPaint();
 
     void closeEvent(QCloseEvent *event) override;
-    //void keyPressEvent(QKeyEvent * event) override;
+    void keyPressEvent(QKeyEvent * event) override;
+    void keyReleaseEvent(QKeyEvent * event) override;
 
 public slots:
     void s_showToolbar();
@@ -29,6 +30,8 @@ private:
 
     QMenu *menu_File;
     QMenu *menu_Save;
+    QMenu *menu_Undo;
+    QMenu *menu_Redo;
     QMenu *menu_setBrushPixmap;
     //
     QMenu *menu_View;

@@ -28,7 +28,6 @@ Toolbar::Toolbar(QWidget *parent) : QWidget(parent)
     mainLayout->addWidget(colorGreen, 1, 0);
     mainLayout->addWidget(colorAny, 1, 1);
     mainLayout->addWidget(clearImage,2,0,2,2);
-
 }
 
 QPushButton *Toolbar::getClearImage() const

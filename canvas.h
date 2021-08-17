@@ -15,7 +15,8 @@ public:
     explicit Canvas(QWidget *parent = nullptr);
     ~Canvas();
     bool saveImage(const QString &fileName,const char *format);
-    int getPenWidth() const;
+    int getPenWidth() const;   
+    void setHoldShiftKey(bool newHoldShiftKey);
 
 public slots:
     void s_changeRedColor();
@@ -36,6 +37,7 @@ protected:
 private:
     QImage *image;
     bool drowing;
+    bool holdShiftKey =false;
     unsigned int penWidth;
     QColor penColor;
 

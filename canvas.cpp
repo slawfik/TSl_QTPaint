@@ -98,10 +98,13 @@ void Canvas::s_changeGreenColor()
 
 void Canvas::mousePressEvent(QMouseEvent *event)
 {
-    if(event->button() == Qt::LeftButton){
+    if(event->button() == Qt::LeftButton && !holdShiftKey){
         drowing = true;
         pointLast = event->pos();
         paintPoint(event->pos());
+    } else if (event->button() == Qt::LeftButton && holdShiftKey) {
+        drowing = true;
+        paintLine(event->pos());
     }
 }
 
@@ -128,6 +131,11 @@ void Canvas::paintEvent(QPaintEvent *event)
     painter.drawImage(dirtyRect, *image, dirtyRect);
 }
 
+void Canvas::setHoldShiftKey(bool newHoldShiftKey)
+{
+    holdShiftKey = newHoldShiftKey;
+}
+
 int Canvas::getPenWidth() const
 {
     return penWidth;
@@ -137,10 +145,8 @@ void Canvas::paintLine(const QPoint &pointEnd)
 {
     QPainter painter(image);
 
-    //painter.setBrush(*drowingBrush);
-
+    painter.setBrush(*drowingBrush);
     painter.setPen(QPen(*drowingBrush, penWidth,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
-    painter.drawRect(50, 50, 150,150);
 
     //painter.drawLine(pointLast, pointEnd);
     /*pointLast.setX(pointLast.rx() - brushPixmap.width()/2);

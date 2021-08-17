@@ -4,10 +4,9 @@
 #include <QMessageBox>
 
 TSL_QTPaint::TSL_QTPaint(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent) ,myCanvas(new Canvas(this))
 
 {
-    myCanvas = new Canvas(this);
     setCentralWidget(myCanvas);
 
     initAction();
@@ -25,6 +24,20 @@ void TSL_QTPaint::closeEvent(QCloseEvent *event)
 {
     Toolbar* myToolbar = Toolbar::createToolbarInstance();
     myToolbar->close();
+}
+
+void TSL_QTPaint::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_Shift){
+        myCanvas->setHoldShiftKey(true);
+    }
+}
+
+void TSL_QTPaint::keyReleaseEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_Shift){
+        myCanvas->setHoldShiftKey(false);
+    }
 }
 
 void TSL_QTPaint::s_showToolbar()
@@ -74,6 +87,8 @@ void TSL_QTPaint::buildMenu()
 
     menuBar()->addMenu(menu_File);
     menuBar()->addMenu(menu_View);
+    menuBar()->addAction(undoAction);
+    menuBar()->addAction(redoAction);
 }
 
 void TSL_QTPaint::initAction()
@@ -87,13 +102,15 @@ void TSL_QTPaint::initAction()
     actBrushPixmap = new QAction(QString("Nový štetc"),this);
     connect(actBrushPixmap,SIGNAL(triggered()),myCanvas,SLOT(s_setNewBrush()));
 
-    undoAction = new QAction(QString("undo"),this);
+    undoAction = new QAction(this);
     undoAction->setShortcuts(QKeySequence::Undo);
+    undoAction->setIcon(QIcon(":/brush/Brush/undo.png"));
     connect(undoAction,SIGNAL(triggered()),myCanvas,SLOT(s_readFrom_undoStackBack()));
     addAction(undoAction);
 
-    redoAction = new QAction(QString("redu"),this);
+    redoAction = new QAction(this);
     redoAction->setShortcuts(QKeySequence::Redo);
+    redoAction->setIcon(QIcon(":/brush/Brush/redo.png"));
     connect(redoAction,SIGNAL(triggered()),myCanvas,SLOT(s_readFrom_undoStackForwar()));
     addAction(redoAction);
 
