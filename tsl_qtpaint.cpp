@@ -105,7 +105,10 @@ void TSL_QTPaint::initAction()
     undoAction = new QAction(this);
     undoAction->setShortcuts(QKeySequence::Undo);
     undoAction->setIcon(QIcon(":/brush/Brush/undo.png"));
-    connect(undoAction,SIGNAL(triggered()),myCanvas,SLOT(s_readFrom_undoStackBack()));
+    //connect(undoAction,SIGNAL(triggered()),myCanvas,SLOT(s_readFrom_undoStackBack()));
+    connect(undoAction,&QAction::triggered,myCanvas,[this](){
+        myCanvas->s_readFrom_undoStackBack();
+    });
     addAction(undoAction);
 
     redoAction = new QAction(this);

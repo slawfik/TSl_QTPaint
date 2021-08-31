@@ -4,8 +4,8 @@
 #include <QWidget>
 #include <QMouseEvent>
 
-#define DEFAULT_HIGHT 800
-#define DEFAULT_WIDTH 1200
+#define DEFAULT_HIGHT 1000
+#define DEFAULT_WIDTH 1800
 #define undoStackMax 10
 
 class Canvas : public QWidget
@@ -15,7 +15,7 @@ public:
     explicit Canvas(QWidget *parent = nullptr);
     ~Canvas();
     bool saveImage(const QString &fileName,const char *format);
-    int getPenWidth() const;   
+    int getPenWidth() const;
     void setHoldShiftKey(bool newHoldShiftKey);
 
 public slots:

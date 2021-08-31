@@ -218,7 +218,7 @@ void Canvas::insertTo_undoStack()
 
     lzo_uint inLen = image->sizeInBytes();
     lzo_uint outLen = inLen+inLen/16+64+3; //def from library
-    unsigned char tempOut[outLen];
+    unsigned char *tempOut = new unsigned char[outLen];
     lzo_voidp wrkmem = (lzo_voidp) malloc(LZO1X_1_MEM_COMPRESS);
     QByteArray arr;
     QDataStream ds(&arr, QIODevice::WriteOnly);
@@ -240,10 +240,12 @@ void Canvas::insertTo_undoStack()
 
     //PUSH IMAGE TO STACK
     ds.writeRawData((const char*)tempOut, outLen);
+    //ds.writeRawData((const char *)image->bits(), inLen);
     undoStack.push_back(arr);
 
     undoStackPosition++;
     free(wrkmem);
+    delete[] tempOut;
 
 #ifdef QT_DEBUG
     end = clock();
